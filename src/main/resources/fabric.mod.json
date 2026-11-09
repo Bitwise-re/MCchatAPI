@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "mcchatapi",
+  "version": "${version}",
+  "name": "MC Chat API",
+  "description": "Server-side API exposing Minecraft chat to external services.",
+  "authors": [
+    "Bitwise"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Bitwise-re/MCchatAPI",
+    "sources": "https://github.com/Bitwise-re/MCchatAPI"
+  },
+  "license": "GPL-3.0-only",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "dev.bitwise.mcchatapi.MCChatAPI"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": ">=26.1.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

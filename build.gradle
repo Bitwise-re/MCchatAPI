@@ -1,0 +1,61 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+loom {
+    // This is a server-side mod; compile only against the server jar.
+    serverOnlyMinecraftJar()
+
+    runs {
+        server {
+            programArg "--nogui"
+        }
+    }
+}
+
+dependencies {
+    // Minecraft 26.1+ is unobfuscated, so no mappings dependency is required.
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+def modVersion = project.version
+def archivesName = project.archives_base_name
+
+processResources {
+    inputs.property "version", modVersion
+
+    filesMatching("fabric.mod.json") {
+        expand "version": modVersion
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${archivesName}" }
+    }
+}
