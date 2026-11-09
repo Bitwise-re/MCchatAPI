@@ -54,3 +54,10 @@ The built jar is written to `build/libs/mcchatapi-<version>.jar`.
 The local development server uses the `run/` directory. It is ignored by git and
 `make run` creates `run/eula.txt` and `run/server.properties` (`eula=true`,
 `online-mode=false`) on first use.
+
+## CI and releases
+
+GitHub Actions runs `.github/workflows/build-release.yml` on every branch push. The
+`build` job compiles the mod jar and stores it as a workflow artifact. On `main`, the
+`release` job runs only after `build` succeeds and publishes the jars to a GitHub
+release tagged `v<mod_version>-<short-sha>`.
