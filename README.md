@@ -4,6 +4,13 @@ Created for a [bitwise.re](https://www.bitwise.re) [feature](https://github.com/
 
 ## Development environment
 
+> [!CAUTION]
+> For the testing of 0.x branch with [rpi_apache's livechat](https://github.com/Bitwise-re/rpi_apache/issues/19),
+> every dev must have a deicated socket on their machine for the commmunication
+> as incorporating the socket creation in the mod is part of the features in developement.
+> The socket must be r/w-able by the user running the mod and the user running the web server.
+> careful ! /run is tmpfs, use another folder or make sure the socket survives reboot
+
 The project targets **Minecraft 26.1.2** with **Fabric**. Minecraft 26.1 and later are
 unobfuscated, so no Yarn or Mojang mappings dependency is used.
 

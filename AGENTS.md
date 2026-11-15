@@ -48,3 +48,7 @@ The server runs in `run/` with `--nogui`. `run/eula.txt` and
 - Use the names present in the game jar (for example `net.minecraft.resources.Identifier`).
 - Prefer Fabric API events over mixins where possible.
 - `ServerMessageEvents` is available through the full Fabric API dependency.
+
+## Rules
+
+- At the start of each user prompt that require information about the files, read the corresponding ones again, because the user might have modified them.
