@@ -1,4 +1,4 @@
-package dev.bitwise.mcchatapi;
+package re.bitwise.mcchatapi;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

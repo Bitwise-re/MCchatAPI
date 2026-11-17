@@ -1,7 +1,7 @@
 # MC Chat API
 
 - Mod ID: `mcchatapi`
-- Group: `dev.bitwise.mcchatapi`
+- Group: `re.bitwise.mcchatapi`
 - Minecraft: `26.1.2`
 - Loader: Fabric `0.20.1`
 - Fabric API: `0.155.3+26.1.2`
@@ -11,7 +11,7 @@
 
 ## Project structure
 
-- `src/main/java/dev/bitwise/mcchatapi/` — mod entrypoint and future implementation
+- `src/main/java/re/bitwise/mcchatapi/` — mod entrypoint and future implementation
 - `src/main/resources/fabric.mod.json` — Fabric metadata
 - `.github/workflows/build-release.yml` — CI build on every branch, release on `main`
 - `run/` — local development server directory (ignored by git)

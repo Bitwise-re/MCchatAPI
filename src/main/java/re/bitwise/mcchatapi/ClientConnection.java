@@ -1,4 +1,4 @@
-package dev.bitwise.mcchatapi;
+package re.bitwise.mcchatapi;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
