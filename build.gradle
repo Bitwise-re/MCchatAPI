@@ -20,6 +20,8 @@ loom {
     runs {
         server {
             programArg "--nogui"
+            // Loom's log4j config uses this for console/latest.log and the net.minecraft logger.
+            property "fabric.log.level", "debug"
         }
     }
 }
