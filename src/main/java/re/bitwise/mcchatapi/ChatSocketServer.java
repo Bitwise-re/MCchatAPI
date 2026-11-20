@@ -1,81 +1,40 @@
 package re.bitwise.mcchatapi;
 
-import com.google.gson.JsonObject;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
 import java.io.IOException;
-import java.net.StandardProtocolFamily;
-import java.net.UnixDomainSocketAddress;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.nio.channels.ClosedChannelException;
-import java.io.UncheckedIOException;
 import java.util.concurrent.RejectedExecutionException;
-import java.nio.file.attribute.PosixFilePermissions;
 
 // Handles the server the clients connect to in its own thread (listener)
 // distribute threads to handle them asynchronously.
 public final class ChatSocketServer {
-    private final Path socketPath;
+    private final APISocket socket;
     private final Set<ClientConnection> clients = ConcurrentHashMap.newKeySet();
     private final MinecraftServer server;
-    private final ServerSocketChannel listenChannel;
     private final Thread listeningThread;
 
-    ChatSocketServer(Path _socketPath, MinecraftServer _server) {
-        socketPath = _socketPath;
+    ChatSocketServer(Path socketPath, String accessGroup, MinecraftServer _server) {
         server = _server;
-
-
-        //setup path
-        try {
-            Files.createDirectories(socketPath.getParent());
-            Files.deleteIfExists(socketPath);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not prepare " + socketPath, e);
-        }
-        //open
-        try {
-            listenChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not open socket", e);
-        }
-        //bind
-        try {
-            listenChannel.bind(UnixDomainSocketAddress.of(socketPath));
-        } catch (IOException e) {
-            try { listenChannel.close(); } catch (IOException ignored) { }
-            throw new UncheckedIOException("Could not bind " + socketPath, e);
-        }
-
-        // old hard coded 666
-        /*
-        try {
-            Files.setPosixFilePermissions(socketPath, PosixFilePermissions.fromString("rw-rw-rw-"));
-        } catch (UnsupportedOperationException e) {
-            MCChatAPI.LOGGER.warn("Filesystem has no POSIX permissions, skipping chmod on {}", socketPath);
-        } catch (IOException e) {
-            MCChatAPI.LOGGER.warn("Could not chmod 666 {}", socketPath, e);
-        }
-        */
+        socket = new APISocket(socketPath, accessGroup);
 
         //start server
         listeningThread = Thread.ofPlatform().name("mcchatapi-listener").daemon(true)
-                .start(() -> listenLoop(listenChannel)); //start the listening thread
+                .start(this::listenLoop); //start the listening thread
 
-        MCChatAPI.LOGGER.info("Listening on {}", socketPath);
+        MCChatAPI.LOGGER.info("Listening on {}", socket.path());
     }
 
     public void stop() {
         boolean success = true;
 
-        try { listenChannel.close(); }
-        catch (IOException e) { MCChatAPI.LOGGER.warn("Failed to close listener", e); success = false; }
+        try { socket.close(); }
+        catch (IOException e) { MCChatAPI.LOGGER.warn("Failed to close socket", e); success = false; }
 
         listeningThread.interrupt();
         try { listeningThread.join(1000); }
@@ -87,9 +46,6 @@ public final class ChatSocketServer {
             client.close();
         }
         clients.clear();
-
-        try { Files.deleteIfExists(socketPath); }
-        catch (IOException e) { MCChatAPI.LOGGER.warn("Failed to delete {}", socketPath, e); success = false; }
 
         if (success) { MCChatAPI.LOGGER.info("Sockets closed"); }
     }
@@ -126,10 +82,10 @@ public final class ChatSocketServer {
         } catch (RejectedExecutionException ignored) {} // server is shutting down
     }
 
-    private void listenLoop(ServerSocketChannel channel) {
+    private void listenLoop() {
         while (true) {
             try { 
-                SocketChannel clientChannel = channel.accept();
+                SocketChannel clientChannel = socket.accept();
                 ClientConnection client = new ClientConnection(this, clientChannel);
                 clients.add(client);
                 client.start();
