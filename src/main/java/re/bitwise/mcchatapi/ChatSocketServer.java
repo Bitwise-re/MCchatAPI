@@ -22,15 +22,13 @@ import java.nio.file.attribute.PosixFilePermissions;
 // distribute threads to handle them asynchronously.
 public final class ChatSocketServer {
     private final Path socketPath;
-    private final String chatPrefix;
     private final Set<ClientConnection> clients = ConcurrentHashMap.newKeySet();
     private final MinecraftServer server;
     private final ServerSocketChannel listenChannel;
     private final Thread listeningThread;
 
-    ChatSocketServer(Path _socketPath, String _chatPrefix, MinecraftServer _server) {
+    ChatSocketServer(Path _socketPath, MinecraftServer _server) {
         socketPath = _socketPath;
-        chatPrefix = _chatPrefix;
         server = _server;
 
 
@@ -55,7 +53,8 @@ public final class ChatSocketServer {
             throw new UncheckedIOException("Could not bind " + socketPath, e);
         }
 
-        // DEV : this is temporary, socket creation / perms will be added later
+        // old hard coded 666
+        /*
         try {
             Files.setPosixFilePermissions(socketPath, PosixFilePermissions.fromString("rw-rw-rw-"));
         } catch (UnsupportedOperationException e) {
@@ -63,6 +62,7 @@ public final class ChatSocketServer {
         } catch (IOException e) {
             MCChatAPI.LOGGER.warn("Could not chmod 666 {}", socketPath, e);
         }
+        */
 
         //start server
         listeningThread = Thread.ofPlatform().name("mcchatapi-listener").daemon(true)
@@ -114,12 +114,11 @@ public final class ChatSocketServer {
         }
     }
 
-    public void injectMessage(String body) { 
+    public void injectMessage(String msg) { 
         try {
             server.executeIfPossible(() -> {
-                String line = chatPrefix + body;
                 try {
-                    server.getPlayerList().broadcastSystemMessage(Component.literal(line), false);
+                    server.getPlayerList().broadcastSystemMessage(Component.literal(msg), false);
                 } catch (RuntimeException e) {
                     MCChatAPI.LOGGER.error("Failed to inject web chat message", e);
                 }

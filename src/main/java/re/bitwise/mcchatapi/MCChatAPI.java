@@ -13,8 +13,7 @@ public final class MCChatAPI implements ModInitializer {
     //mod identification to send logs into the console
     public static final String MOD_ID = "mcchatapi";
     private static final Path SOCKET_PATH = Path.of("/run/mcchat/mcchat.sock");
-    private static final String PREFIX = "[bitwise.re Livechat] ";
-    // TODO : make the strings above part of a config file
+    // TODO : make the socket path part of a config file
     // CAUTION : static vars are declared before any config can be read
     // drop static final keywords and init in onInit() after cfg read
 
@@ -33,7 +32,7 @@ public final class MCChatAPI implements ModInitializer {
         //Start on server start and stop on server stop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             try {
-                socketServer = new ChatSocketServer(SOCKET_PATH,PREFIX,server);
+                socketServer = new ChatSocketServer(SOCKET_PATH,server);
             } catch (UncheckedIOException e) {
                 LOGGER.error("mod disabled : could not open socket", e);
                 socketServer = null;
