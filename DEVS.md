@@ -77,15 +77,17 @@ The local development server uses the `run/` directory. It is ignored by git and
 
 ### Runtime flow
 
-1. `MCChatAPI.onInitialize()` loads `ModConfig` from the game directory.
-2. `ServerLifecycleEvents.SERVER_STARTED` creates `ChatSocketServer`; `SERVER_STOPPING`
+1. `MCChatAPI.onInitialize()` checks `os.name` and returns immediately with an
+   `OS not supported` error on Windows: no config file, callbacks, or socket are created.
+2. It then loads `ModConfig` from the game directory.
+3. `ServerLifecycleEvents.SERVER_STARTED` creates `ChatSocketServer`; `SERVER_STOPPING`
    closes it. If socket setup fails, the mod logs `mod disabled : could not open socket`
    and chat broadcasting stays off until the next server start.
-3. `ServerMessageEvents` (`CHAT_MESSAGE`, `COMMAND_MESSAGE`, non-overlay `GAME_MESSAGE`)
+4. `ServerMessageEvents` (`CHAT_MESSAGE`, `COMMAND_MESSAGE`, non-overlay `GAME_MESSAGE`)
    broadcast decorated text to every connected client as an `Mmsg` packet.
-4. Incoming `Wmsg` packets are posted with `server.executeIfPossible(...)` and shown to
+5. Incoming `Wmsg` packets are posted with `server.executeIfPossible(...)` and shown to
    all players via `broadcastSystemMessage(Component.literal(msg), false)`.
-5. A malformed packet or unknown `type` closes that client connection only; other
+6. A malformed packet or unknown `type` closes that client connection only; other
    clients keep running.
 
 ### Socket and permissions

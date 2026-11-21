@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UncheckedIOException;
+import java.util.Locale;
 
 public final class MCChatAPI implements ModInitializer {
     //mod identification to send logs into the console
@@ -27,6 +28,14 @@ public final class MCChatAPI implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("Initializing");
+
+        // Unix domain sockets need a Unix-like host. Bail out before creating anything
+        // (config file, event callbacks, socket) when running on Windows.
+        String osName = System.getProperty("os.name", "");
+        if (osName.toLowerCase(Locale.ROOT).contains("win")) {
+            LOGGER.error("OS not supported: {} - Unix-like host required, mod disabled", osName);
+            return;
+        }
 
         config = ModConfig.load(FabricLoader.getInstance().getGameDir());
 

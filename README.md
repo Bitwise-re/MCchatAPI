@@ -19,7 +19,7 @@ MC Chat API is a **server-side** Fabric mod that connects your Minecraft chat to
 | Loader | Fabric (server side only) |
 | Fabric API | Required |
 | Java | 25 or newer |
-| Host | Linux/Unix — the mod uses Unix domain sockets |
+| Host | Linux/Unix — the mod uses Unix domain sockets; Windows is not supported |
 
 ## Installation
 
@@ -85,6 +85,7 @@ When group access is enabled, the mod sets ACLs on the socket's parent folder so
 
 | Log message | What to do |
 | --- | --- |
+| `OS not supported` | The server is running on Windows. Run it on a Linux/Unix host; the mod stays inactive and creates no config file or socket. |
 | `mod disabled : could not open socket` | Check that the socket path's parent directory can be created and written to by the server user. Chat broadcasting stays off until the server is restarted with a working path. |
 | `Socket access group '...' does not exist` | Create the group or correct `socket-access-group`; the socket is owner-only until then. |
 | `Could not set ACL ... using owner-only permissions` | Install `setfacl` (the `acl` package) and check that the filesystem supports ACLs. |
