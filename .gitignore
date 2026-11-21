@@ -6,6 +6,7 @@ classes/
 
 # Fabric
 run/
+smoke-run/
 remappedSrc/
 
 # Eclipse
@@ -34,3 +35,7 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# Python
+__pycache__/
+*.pyc

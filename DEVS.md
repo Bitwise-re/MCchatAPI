@@ -46,6 +46,7 @@ make debug          # shortcut for make run DEBUG=1
 make sources        # decompile Minecraft sources for reference
 make clean          # delete Gradle build output
 make doctor         # show the active Java and Gradle versions
+make smoke          # build, start an isolated server, and run the socket smoke test
 ```
 
 Without Make:
@@ -139,3 +140,24 @@ GitHub Actions runs `.github/workflows/build-release.yml` on every branch push. 
 `build` job compiles the mod jar and stores it as a workflow artifact. On `main`, the
 `release` job runs only after `build` succeeds and publishes the jars to a GitHub
 release tagged `v<mod_version>-<short-sha>`.
+
+### Pull request smoke test
+
+`.github/workflows/smoke-test.yml` runs on pull request `opened`, `synchronize`,
+`reopened`, and `ready_for_review` events. It builds the mod, starts a real Fabric
+server with RCON enabled, and uses `scripts/smoke-test.py` to:
+
+- wait for the `Listening on ...` log line,
+- complete the `hello` / `ack` handshake,
+- send a `Wmsg` and check that the injected text appears in the server log,
+- issue `say` over RCON and check that an `Mmsg` packet reaches the socket client.
+
+The test config uses an empty access group so CI does not depend on `getent`/`setfacl`;
+owner-only socket permissions are enough. On failure, the server log is uploaded as the
+`smoke-server-log` artifact.
+
+Locally, run the same test with `make smoke`. It uses `scripts/run-smoke.sh`, builds the
+mod, starts an isolated server in `smoke-run/` (leaving your normal `run/` untouched),
+writes `smoke-server.log`, and shuts the server down when finished. Override the
+defaults with `SMOKE_RUN_DIR`, `SMOKE_LOG`, `SMOKE_RCON_PORT`, and
+`SMOKE_RCON_PASSWORD` if needed.

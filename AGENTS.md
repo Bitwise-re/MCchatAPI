@@ -14,7 +14,9 @@
 - `src/main/java/re/bitwise/mcchatapi/` — mod entrypoint and future implementation
 - `src/main/resources/fabric.mod.json` — Fabric metadata
 - `.github/workflows/build-release.yml` — CI build on every branch, release on `main`
+- `.github/workflows/smoke-test.yml` — PR socket smoke test; runner in `scripts/run-smoke.sh`, client in `scripts/smoke-test.py`
 - `run/` — local development server directory (ignored by git)
+- `smoke-run/` — isolated server directory used by `make smoke` (ignored by git)
 
 This is currently an environment scaffold only. The chat/API features have not been
 implemented yet.
