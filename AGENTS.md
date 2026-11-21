@@ -52,3 +52,5 @@ The server runs in `run/` with `--nogui`. `run/eula.txt` and
 ## Rules
 
 - At the start of each user prompt that require information about the files, read the corresponding ones again, because the user might have modified them.
+- When the request is ambiguous (for example file names or casing), ask the user for clarification instead of guessing.
+- Keep user documentation in `README.md` and developer documentation in `DEVS.md`; build and development commands belong in `DEVS.md`, not `README.md`.
