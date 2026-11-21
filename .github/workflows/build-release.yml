@@ -18,7 +18,7 @@ jobs:
       group: build-${{ github.ref }}
       cancel-in-progress: true
     outputs:
-      version: ${{ steps.mod.outputs.version }}
+      release_name: ${{ steps.mod.outputs.release_name }}
       tag: ${{ steps.mod.outputs.tag }}
     steps:
       - name: Checkout
@@ -36,18 +36,26 @@ jobs:
       - name: Build mod
         run: ./gradlew build
 
-      - name: Read mod version
+      - name: Determine release name
         id: mod
         run: |
-          version="$(sed -n 's/^mod_version=//p' gradle.properties)"
-          short_sha="${GITHUB_SHA::7}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v${version}-${short_sha}" >> "$GITHUB_OUTPUT"
+          mapfile -t jars < <(
+            find build/libs -maxdepth 1 -type f -name 'mcchatapi-*.jar' \
+              ! -name '*-sources.jar' ! -name '*-dev.jar' | sort
+          )
+          if [ "${#jars[@]}" -ne 1 ]; then
+            echo "Expected exactly one main mod jar in build/libs, found ${#jars[@]}" >&2
+            printf '  %s\n' "${jars[@]}" >&2
+            exit 1
+          fi
+          release_name="$(basename "${jars[0]}" .jar)"
+          echo "release_name=$release_name" >> "$GITHUB_OUTPUT"
+          echo "tag=$release_name" >> "$GITHUB_OUTPUT"
 
       - name: Upload built jars
         uses: actions/upload-artifact@v7
         with:
-          name: mcchatapi-jars
+          name: ${{ steps.mod.outputs.release_name }}
           path: build/libs/mcchatapi-*.jar
           if-no-files-found: error
           retention-days: 1
@@ -67,7 +75,7 @@ jobs:
       - name: Download built jars
         uses: actions/download-artifact@v8
         with:
-          name: mcchatapi-jars
+          name: ${{ needs.build.outputs.release_name }}
           path: dist
 
       - name: Publish GitHub release
@@ -75,14 +83,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.build.outputs.tag }}
-          VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_NAME: ${{ needs.build.outputs.release_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            # Re-run on the same commit: replace the assets instead of failing.
+            # Same jar version on another commit or a re-run: replace the assets.
             gh release upload "$TAG" dist/*.jar --clobber
           else
             gh release create "$TAG" dist/*.jar \
               --target "$GITHUB_SHA" \
-              --title "MC Chat API v$VERSION (${GITHUB_SHA::7})" \
+              --title "$RELEASE_NAME" \
               --generate-notes
           fi

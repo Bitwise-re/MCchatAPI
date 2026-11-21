@@ -139,9 +139,11 @@ Run `make run DEBUG=1` for connection/disconnection and shutdown logs.
 ## CI and releases
 
 GitHub Actions runs `.github/workflows/build-release.yml` on every branch push. The
-`build` job compiles the mod jar and stores it as a workflow artifact. On `main`, the
-`release` job runs only after `build` succeeds and publishes the jars to a GitHub
-release tagged `v<mod_version>-<short-sha>`.
+`build` job compiles the mod and sources jars and stores them as a workflow artifact
+named after the built mod jar. On `main`, the `release` job runs only after `build`
+succeeds and publishes both jars to a GitHub release whose tag and title are the built
+mod jar's filename without `.jar` (for example `mcchatapi-0.1.0+26.1.2`). A re-run or
+a later push with the same jar name replaces the existing release's assets.
 
 ### Pull request smoke test
 
