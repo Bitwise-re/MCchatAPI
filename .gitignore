@@ -7,6 +7,7 @@ classes/
 # Fabric
 run/
 smoke-run/
+windows-smoke-run/
 remappedSrc/
 
 # Eclipse

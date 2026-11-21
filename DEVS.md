@@ -163,3 +163,18 @@ mod, starts an isolated server in `smoke-run/` (leaving your normal `run/` untou
 writes `smoke-server.log`, and shuts the server down when finished. Override the
 defaults with `SMOKE_RUN_DIR`, `SMOKE_LOG`, `SMOKE_RCON_PORT`, and
 `SMOKE_RCON_PASSWORD` if needed.
+
+### Windows init guard
+
+The `windows-init-check` job in the same workflow runs on `windows-latest` to verify
+graceful degradation on an unsupported host (it does not make Windows a supported
+platform). It builds with `.\gradlew.bat`, then `scripts/check-windows-init.ps1` starts
+an isolated server in `windows-smoke-run/` and checks that:
+
+- `OS not supported` appears in `windows-smoke-server.log`,
+- the server still reaches `Done (...)` and stays up,
+- `Listening on` never appears (no socket is opened),
+- no `config/mcchatapi.conf` and no `mcchatapi-sockets/` are created in the run dir.
+
+The server is stopped over RCON with a process-tree kill as a fallback, and the log is
+uploaded as the `windows-init-server-log` artifact on failure.
