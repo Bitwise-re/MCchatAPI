@@ -5,7 +5,10 @@ JAVA_HOME := $(JDK25)
 export JAVA_HOME
 endif
 
-.PHONY: build run setup-run sources clean doctor
+.PHONY: build run setup-run sources clean doctor debug
+
+# `make run DEBUG=1` and `make debug` both enable dev-server debug logging.
+RUN_LOG_LEVEL := $(if $(filter 1,$(DEBUG)),debug,$(if $(filter debug,$(MAKECMDGOALS)),debug,info))
 
 build:
 	./gradlew build
@@ -17,7 +20,9 @@ setup-run:
 	@test -f run/server.properties || printf 'online-mode=false\nserver-port=25565\nmotd=MC Chat API dev server\n' > run/server.properties
 
 run: setup-run
-	./gradlew runServer
+	./gradlew runServer -PmcChatApiLogLevel=$(RUN_LOG_LEVEL)
+
+debug: run
 
 sources:
 	./gradlew genSources

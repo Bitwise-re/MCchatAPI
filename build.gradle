@@ -13,6 +13,9 @@ repositories {
     mavenCentral()
 }
 
+// Default the dev server to info logs; `make run DEBUG=1` / `make debug` pass `debug` here.
+def devLogLevel = providers.gradleProperty("mcChatApiLogLevel").orElse("info").get()
+
 loom {
     // This is a server-side mod; compile only against the server jar.
     serverOnlyMinecraftJar()
@@ -21,7 +24,7 @@ loom {
         server {
             programArg "--nogui"
             // Loom's log4j config uses this for console/latest.log and the net.minecraft logger.
-            property "fabric.log.level", "debug"
+            property "fabric.log.level", devLogLevel
         }
     }
 }

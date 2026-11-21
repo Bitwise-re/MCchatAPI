@@ -42,11 +42,13 @@ on JDK 25 without changing the system-wide default Java.
 ### Commands
 
 ```sh
-make build      # build the mod jar
-make run        # run a local development server
-make sources    # decompile Minecraft sources for reference
-make clean      # delete Gradle build output
-make doctor     # show the active Java and Gradle versions
+make build          # build the mod jar
+make run            # run a local development server with info logs
+make run DEBUG=1    # run the dev server with debug logs
+make debug          # shortcut for make run DEBUG=1
+make sources        # decompile Minecraft sources for reference
+make clean          # delete Gradle build output
+make doctor         # show the active Java and Gradle versions
 ```
 
 Without Make:
@@ -60,7 +62,8 @@ The built jar is written to `build/libs/mcchatapi-<version>.jar`.
 
 The local development server uses the `run/` directory. It is ignored by git and
 `make run` creates `run/eula.txt` and `run/server.properties` (`eula=true`,
-`online-mode=false`) on first use.
+`online-mode=false`) on first use. Logs default to `info`; `make run DEBUG=1`
+(or `make debug`) sets the Minecraft log level to `debug`.
 
 ## CI and releases
 
