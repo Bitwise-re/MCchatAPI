@@ -1,24 +1,42 @@
-# Compiled class file
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# Fabric
+run/
+smoke-run/
+windows-smoke-run/
+remappedSrc/
+
+# Eclipse
+*.launch
+.settings/
+.classpath
+.project
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+bin/
+
+# macOS
+*.DS_Store
+
+# Java
 *.class
-
-# Log file
 *.log
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
 
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# Python
+__pycache__/
+*.pyc

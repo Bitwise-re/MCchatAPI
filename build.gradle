@@ -1,0 +1,69 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Default the dev server to info logs; `make run DEBUG=1` / `make debug` pass `debug` here.
+def devLogLevel = providers.gradleProperty("mcChatApiLogLevel").orElse("info").get()
+// `make smoke` points this at smoke-run/ so it never touches the normal dev server.
+def runDir = providers.gradleProperty("mcChatApiRunDir").orElse("run").get()
+
+loom {
+    // This is a server-side mod; compile only against the server jar.
+    serverOnlyMinecraftJar()
+
+    runs {
+        server {
+            runDirectory.set(layout.projectDirectory.dir(runDir))
+            programArg "--nogui"
+            // Loom's log4j config uses this for console/latest.log and the net.minecraft logger.
+            property "fabric.log.level", devLogLevel
+        }
+    }
+}
+
+dependencies {
+    // Minecraft 26.1+ is unobfuscated, so no mappings dependency is required.
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+def modVersion = project.mod_version
+def archivesName = project.archives_base_name
+
+processResources {
+    inputs.property "version", modVersion
+
+    filesMatching("fabric.mod.json") {
+        expand "version": modVersion
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${archivesName}" }
+    }
+}

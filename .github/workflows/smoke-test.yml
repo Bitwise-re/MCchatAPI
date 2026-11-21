@@ -1,0 +1,82 @@
+name: Smoke test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    name: Socket smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RCON_PASSWORD: smoke
+      RCON_PORT: "25575"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # The build workflow only runs on branch pushes (and does not cover forks),
+      # so the smoke test builds its own jar instead of waiting for that artifact.
+      - name: Build mod jar
+        run: ./gradlew build
+
+      - name: Run server and exercise socket
+        shell: bash
+        run: bash scripts/run-smoke.sh
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-server-log
+          path: smoke-server.log
+          if-no-files-found: ignore
+
+  windows-init-check:
+    name: Windows build + init guard
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build mod jar
+        run: .\gradlew.bat build --console=plain
+
+      - name: Verify init guard on Windows
+        shell: pwsh
+        run: ./scripts/check-windows-init.ps1
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-init-server-log
+          path: windows-smoke-server.log
+          if-no-files-found: ignore
