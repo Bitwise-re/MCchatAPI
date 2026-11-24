@@ -74,6 +74,11 @@ The local development server uses the `run/` directory. It is ignored by git and
 | `APISocket.java` | Creates the Unix domain socket, its parent directory, and its permissions/ACLs; deletes the socket on shutdown. |
 | `ClientConnection.java` | One reader and one writer virtual thread per client, with an outbound queue so chat broadcasts never block on a slow client. |
 | `Protocol.java` | Parses/validates incoming packets and formats outgoing packets; all wire-format strings live here. |
+| `PrefixedLogger.java` | Wraps the SLF4J logger so every mod log message starts with `[MCchatAPI] `, regardless of the server's Log4j pattern. |
+
+All mod log calls go through `MCChatAPI.LOGGER`. The prefix is part of the message, so it
+appears in dev (Loom) and on plain servers alike; server log patterns still control the
+timestamp/thread/level in front of it.
 
 ### Runtime flow
 

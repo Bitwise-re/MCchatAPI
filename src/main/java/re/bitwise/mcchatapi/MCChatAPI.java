@@ -14,7 +14,7 @@ public final class MCChatAPI implements ModInitializer {
     //mod identification to send logs into the console
     public static final String MOD_ID = "mcchatapi";
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = new PrefixedLogger(LoggerFactory.getLogger(MOD_ID), "[MCchatAPI] ");
 
     // loaded at startup from gamedir/config/mcchatapi.conf
     private static ModConfig config;
