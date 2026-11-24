@@ -3,7 +3,7 @@
 > [!TIP]
 > Looking to build, run, or contribute to the mod? Developers should also read [DEVS.md](DEVS.md).
 
-MC Chat API is a **server-side** Fabric mod that connects your Minecraft chat to an external service — for example a web livechat or a bot — through a local Unix domain socket. Players install nothing, and no network port is opened.
+MC Chat API is a **server-side** Fabric mod that connects your Minecraft chat to an external service — for example a web livechat or a bot — through a local Unix domain socket.
 
 ## What it does
 
@@ -13,13 +13,8 @@ MC Chat API is a **server-side** Fabric mod that connects your Minecraft chat to
 
 ## Requirements
 
-| Requirement | Details |
-| --- | --- |
-| Minecraft | 26.1.2 or newer |
-| Loader | Fabric (server side only) |
-| Fabric API | Required |
-| Java | 25 or newer |
-| Host | Linux/Unix — the mod uses Unix domain sockets; Windows is not supported |
+This mod was intended to be used on a **UNIX-like system** ! On windows, it will log an unsupported OS error and the mod will not startup.\
+It relies on the FabricAPI.
 
 ## Installation
 
@@ -64,7 +59,7 @@ A typical exchange looks like this:
 {"type":"Mmsg","msg":"<Player> hi there"}
 ```
 
-The first two lines are the handshake; the next two are examples of messages in each direction. Unknown packet types or missing `msg` fields close the connection with a warning in the log.
+The first two lines are the connection test; the next two are examples of messages in each direction. Unknown packet types or missing `msg` fields close the connection with a warning in the log.
 
 ## Permissions and security
 
@@ -72,10 +67,10 @@ The socket is never world-readable. By default only the user running the Minecra
 
 To let a web service connect:
 
-1. Create the group if needed: `sudo groupadd mcchatapi`
-2. Add the service user to it: `sudo usermod -aG mcchatapi www-data`
-3. Set `socket-access-group` in the config to that group name, then restart the server.
-4. Make sure `getent` and `setfacl` are installed (`acl` package on most distributions).
+1. Make sure `getent` and `setfacl` are installed (`acl` package on most distributions).
+2. Create the group if needed: `sudo groupadd mcchatapi`
+3. Add the service user to it: `sudo usermod -aG mcchatapi www-data`
+4. Set `socket-access-group` in the config to that group name, then restart the server.
 
 When group access is enabled, the mod sets ACLs on the socket's parent folder so the group can traverse it and use sockets created inside. If the group does not exist, the ACL tools are unavailable, or setting ACLs fails, the mod logs a warning and falls back to **owner-only** access (mode `600`) — only the server user can connect. The socket file is removed when the server stops.
 
@@ -92,6 +87,16 @@ When group access is enabled, the mod sets ACLs on the socket's parent folder so
 | `Closing client after protocol error` | The connected service sent malformed JSON or an unknown `type`; fix the packets it sends. |
 | `Listening on ...` | Normal startup message showing the socket path in use. |
 
+For any other issue, or if you need help, consider opening a [github issue](https://github.com/Bitwise-re/MCchatAPI/issues)
+
+## AI
+
+Generative AI has been used to check for blatant bugs, restructure part of the code into different files from a single one (using hand-written code), and helped build the environnement (makefiles, python checks, ...).\
+It also generated part of the documentation.
+
+All generated AI content has been read and approved by the author of the corresponding commit.
+
 ## Links
 
 - [Source code and issue tracker](https://github.com/Bitwise-re/MCchatAPI)
+- [Instance of an app communicating with the mod](https://github.com/Bitwise-re/rpi_apache)
