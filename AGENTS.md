@@ -14,7 +14,7 @@
 - `src/main/java/re/bitwise/mcchatapi/` — mod entrypoint and future implementation
 - `src/main/resources/fabric.mod.json` — Fabric metadata
 - `.github/workflows/build-release.yml` — CI build on every branch, release on `main`
-- `.github/workflows/smoke-test.yml` — PR socket smoke test; runner in `scripts/run-smoke.sh`, client in `scripts/smoke-test.py`
+- `.github/workflows/pull-request-tests.yml` — PR checks (version bump, socket smoke test, Windows init guard) plus the `final-pr-checks` aggregator; runner in `scripts/run-smoke.sh`, client in `scripts/smoke-test.py`
 - `run/` — local development server directory (ignored by git)
 - `smoke-run/` — isolated server directory used by `make smoke` (ignored by git)
 
@@ -56,3 +56,5 @@ The server runs in `run/` with `--nogui`. `run/eula.txt` and
 - At the start of each user prompt that require information about the files, read the corresponding ones again, because the user might have modified them.
 - When the request is ambiguous (for example file names or casing), ask the user for clarification instead of guessing.
 - Keep user documentation in `README.md` and developer documentation in `DEVS.md`; build and development commands belong in `DEVS.md`, not `README.md`.
+- Every new PR-only CI job in `.github/workflows/pull-request-tests.yml` must be added to the `final-pr-checks` job's `needs` list; branch rulesets should require only `Final PR checks`.
+- Do not add deployment jobs to `final-pr-checks`; it aggregates PR checks only.

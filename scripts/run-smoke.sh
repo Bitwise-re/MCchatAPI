@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start an isolated Fabric server, exercise the socket protocol, and shut it down.
-# Used by both `make smoke` and .github/workflows/smoke-test.yml.
+# Used by both `make smoke` and .github/workflows/pull-request-tests.yml.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

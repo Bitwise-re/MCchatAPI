@@ -1,0 +1,167 @@
+name: Pull request tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  version-check:
+    name: Version bump check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v7
+
+      - name: Ensure mod_version is greater than main
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          read_version() {
+            sed -n 's/^mod_version=//p' "$1" | head -n 1
+          }
+
+          pr_version="$(read_version gradle.properties)"
+          if [[ -z "$pr_version" ]]; then
+            echo "Could not read mod_version from PR gradle.properties" >&2
+            exit 1
+          fi
+
+          gh api "repos/${GH_REPO}/contents/gradle.properties?ref=main" \
+            --jq .content | base64 -d > main-gradle.properties
+
+          main_version="$(read_version main-gradle.properties)"
+          if [[ -z "$main_version" ]]; then
+            echo "Could not read mod_version from main gradle.properties" >&2
+            exit 1
+          fi
+
+          # Keep this check strict: numeric dot-separated versions only.
+          if [[ ! "$pr_version" =~ ^[0-9]+(\.[0-9]+)*$ || \
+                ! "$main_version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "Expected numeric dot-separated mod_version values, got main='$main_version' PR='$pr_version'" >&2
+            exit 1
+          fi
+
+          if [[ "$pr_version" == "$main_version" ]]; then
+            echo "mod_version must be increased before merging (main: $main_version, PR: $pr_version)" >&2
+            exit 1
+          fi
+
+          highest="$(
+            printf '%s\n%s\n' "$main_version" "$pr_version" | sort -V | tail -n 1
+          )"
+          if [[ "$highest" != "$pr_version" ]]; then
+            echo "mod_version must be greater than main (main: $main_version, PR: $pr_version)" >&2
+            exit 1
+          fi
+
+          echo "mod_version OK: $main_version -> $pr_version"
+
+  smoke-test:
+    name: Socket smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RCON_PASSWORD: smoke
+      RCON_PORT: "25575"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # The build workflow only runs on branch pushes (and does not cover forks),
+      # so the smoke test builds its own jar instead of waiting for that artifact.
+      - name: Build mod jar
+        run: ./gradlew build
+
+      - name: Run server and exercise socket
+        shell: bash
+        run: bash scripts/run-smoke.sh
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-server-log
+          path: smoke-server.log
+          if-no-files-found: ignore
+
+  windows-init-check:
+    name: Windows build + init guard
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build mod jar
+        run: .\gradlew.bat build --console=plain
+
+      - name: Verify init guard on Windows
+        shell: pwsh
+        run: ./scripts/check-windows-init.ps1
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-init-server-log
+          path: windows-smoke-server.log
+          if-no-files-found: ignore
+
+  # Single required status check for branch rulesets. Add every new PR-only
+  # check to `needs` here; do not add deployment jobs.
+  final-pr-checks:
+    name: Final PR checks
+    if: always()
+    needs: [version-check, smoke-test, windows-init-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+      - name: Verify all PR checks succeeded
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "$NEEDS_JSON" \
+            | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' \
+            > failed-checks.txt
+
+          if [[ -s failed-checks.txt ]]; then
+            echo "The following PR checks did not succeed:" >&2
+            cat failed-checks.txt >&2
+            exit 1
+          fi
+
+          echo "All PR checks succeeded"
