@@ -1,4 +1,4 @@
-name: Smoke test
+name: Pull request tests
 
 on:
   pull_request:
@@ -137,3 +137,31 @@ jobs:
           name: windows-init-server-log
           path: windows-smoke-server.log
           if-no-files-found: ignore
+
+  # Single required status check for branch rulesets. Add every new PR-only
+  # check to `needs` here; do not add deployment jobs.
+  final-pr-checks:
+    name: Final PR checks
+    if: always()
+    needs: [version-check, smoke-test, windows-init-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+      - name: Verify all PR checks succeeded
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "$NEEDS_JSON" \
+            | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' \
+            > failed-checks.txt
+
+          if [[ -s failed-checks.txt ]]; then
+            echo "The following PR checks did not succeed:" >&2
+            cat failed-checks.txt >&2
+            exit 1
+          fi
+
+          echo "All PR checks succeeded"
