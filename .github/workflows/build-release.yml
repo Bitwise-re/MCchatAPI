@@ -94,3 +94,124 @@ jobs:
               --title "$RELEASE_NAME" \
               --generate-notes
           fi
+
+  modrinth:
+    name: Publish to Modrinth
+    needs: [build, release]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: release-main
+      cancel-in-progress: false
+    env:
+      MODRINTH_API: https://api.modrinth.com/v2
+      MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
+      RELEASE_NAME: ${{ needs.build.outputs.release_name }}
+      TAG: ${{ needs.build.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout README
+        uses: actions/checkout@v7
+
+      - name: Download built jars
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.release_name }}
+          path: dist
+
+      - name: Publish to Modrinth
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${MODRINTH_PAT:?MODRINTH_PAT is required}"
+
+          jar="dist/${RELEASE_NAME}.jar"
+          test -f "$jar"
+
+          # RELEASE_NAME is e.g. mcchatapi-0.1.0+26.1.2
+          base="${RELEASE_NAME#mcchatapi-}"
+          if [[ "$base" == "$RELEASE_NAME" || "$base" != *+* ]]; then
+            echo "Unexpected release name: $RELEASE_NAME" >&2
+            exit 1
+          fi
+          project_version="${base%%+*}"      # 0.1.0, derived from the jar name
+          minecraft_version="${base#*+}"     # 26.1.2
+
+          slug="${GITHUB_REPOSITORY##*/}"    # MCchatAPI
+          ua="${GITHUB_REPOSITORY}/build-release"
+
+          # Validate the slug and resolve the project ID in one request.
+          # GET /project/{id|slug}/check returns 200 with {id: ...}, or 404.
+          if ! project_id="$(
+            curl -fsS \
+              -H "Authorization: $MODRINTH_PAT" \
+              -H "User-Agent: $ua" \
+              "$MODRINTH_API/project/$slug/check" | jq -r '.id'
+          )"; then
+            echo "Modrinth project slug '$slug' is invalid or not visible" >&2
+            exit 1
+          fi
+          if [[ -z "$project_id" || "$project_id" == null ]]; then
+            echo "Modrinth project slug '$slug' returned no project id" >&2
+            exit 1
+          fi
+
+          # Defensive guard: the PR check should prevent this, but fail loudly
+          # if a workflow re-run would create a duplicate Modrinth version.
+          existing="$(
+            curl -fsS \
+              -H "Authorization: $MODRINTH_PAT" \
+              -H "User-Agent: $ua" \
+              "$MODRINTH_API/project/$slug/version" \
+              | jq -r --arg v "$project_version" \
+                  '[.[] | select(.version_number == $v)][0].id // empty'
+          )"
+          if [[ -n "$existing" ]]; then
+            echo "Modrinth version $project_version already exists ($existing)" >&2
+            exit 1
+          fi
+
+          # Long description = README.md
+          jq -n --rawfile body README.md '{body: $body}' > project-patch.json
+          curl -fsS -X PATCH \
+            -H "Authorization: $MODRINTH_PAT" \
+            -H "User-Agent: $ua" \
+            -H 'Content-Type: application/json' \
+            --data-binary @project-patch.json \
+            "$MODRINTH_API/project/$slug" >/dev/null
+
+          changelog="$(gh release view "$TAG" --json body --jq .body)"
+
+          # `data` must be the first multipart field, before the jar file.
+          data_json="$(jq -nc \
+            --arg name "$RELEASE_NAME" \
+            --arg version_number "$project_version" \
+            --arg changelog "$changelog" \
+            --arg project_id "$project_id" \
+            --arg minecraft_version "$minecraft_version" \
+            '{
+              name: $name,
+              version_number: $version_number,
+              changelog: $changelog,
+              dependencies: [],
+              game_versions: [$minecraft_version],
+              version_type: "release",
+              loaders: ["fabric"],
+              featured: false,
+              environment: "server_only",
+              status: "listed",
+              project_id: $project_id,
+              file_parts: ["jar"],
+              primary_file: "jar"
+            }')"
+
+          curl -fsS -X POST \
+            -H "Authorization: $MODRINTH_PAT" \
+            -H "User-Agent: $ua" \
+            --form-string "data=$data_json" \
+            --form "jar=@${jar};type=application/java-archive" \
+            "$MODRINTH_API/version"
